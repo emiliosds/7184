@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:todo/models/item.dart';
@@ -79,14 +78,16 @@ class _HomePageState extends State<HomePage> {
   }
 
   saveOnTrash(index) async {
-    var json = jsonEncode(widget.items[index]);
+    var item = widget.items[index];
+    var json = jsonEncode(item);
     var preferences = await SharedPreferences.getInstance();
-    await preferences.setString('data-trash', json);
+    await preferences.setString('data-' + item.id, json);
   }
 
-  undo() async {
+  undo(id) async {
     var preferences = await SharedPreferences.getInstance();
-    var data = preferences.getString('data-trash');
+    var data = preferences.getString('data-' + id);
+    await preferences.remove('data-' + id);
     if (data != null) {
       Map decoded = jsonDecode(data);
       Item result = Item.fromJson(decoded);
@@ -134,7 +135,7 @@ class _HomePageState extends State<HomePage> {
             ),
             background: Container(
               alignment: AlignmentDirectional.centerStart,
-              color: Colors.blue.withOpacity(0.7),
+              color: Colors.red.withOpacity(0.7),
               child: Padding(
                 padding: EdgeInsets.fromLTRB(10, 0, 0, 0),
                 child: Icon(
@@ -149,36 +150,26 @@ class _HomePageState extends State<HomePage> {
               child: Padding(
                 padding: EdgeInsets.fromLTRB(0, 0, 10, 0),
                 child: Icon(
-                  Icons.cancel,
+                  Icons.delete,
                   color: Colors.white,
                 ),
               ),
             ),
             onDismissed: (direction) {
-              print(direction);
               Scaffold.of(context).showSnackBar(
                 SnackBar(
                   content: Text("'${item.title}' foi excluído"),
                   action: SnackBarAction(
-                    label: "Undo",
+                    label: "Desfazer",
                     textColor: Colors.yellow,
                     onPressed: () {
-                      undo();
+                      undo(item.id);
                     },
                   ),
                 ),
               );
               remove(index);
             },
-            // confirmDismiss: (direction) async {
-            //   if (direction == DismissDirection.startToEnd) {
-            //     /// edit item
-            //     return false;
-            //   } else if (direction == DismissDirection.endToStart) {
-            //     /// delete
-            //     return true;
-            //   }
-            // },
           );
         },
       ),
